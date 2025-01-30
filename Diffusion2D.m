@@ -1,5 +1,4 @@
-%% Diffusion2D 
-% Author: Adam Buchalter
+%% Diffusion2D
 % ------------------------------------------------------------------------------
 % This is a finite-difference solver for 2-dimensional, Laplacian heat diffusion
 % in cartesian coordinates using Dirichlet boundary conditions
