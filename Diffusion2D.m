@@ -34,7 +34,11 @@ Deltay = h/(j_max-1);
 % Discretize and convert to a linear system A*T = b
 
 % Init
-A = eye(i_max*j_max); % Coefficient Matrix
+% A = eye(i_max*j_max); % Coefficient Matrix
+A = spalloc(i_max*j_max, 5*i_max, j_max); % Allocate Coeff Matrix Sparsely
+for i = 1:i_max*j_max
+    A(i,i) = 1.0;
+end
 b = zeros(i_max*j_max,1);
 
 % Define Coefficient Matrix
@@ -54,6 +58,7 @@ for i = 2:i_max-1
         A(k,k_s) = 1.0/Deltay^2;
     end
 end
+A = sparse(A); % Define A sparse
 
 % Apply BCs
 for i = 1:1
