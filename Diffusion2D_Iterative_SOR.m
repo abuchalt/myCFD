@@ -62,7 +62,7 @@ while (residual > epsilon)
     for i = 2:i_max-1
         for j = 2:j_max-1
             % T(i,j) = ((T(i+1,j)+T(i-1,j))/Deltax^2 + (T(i,j+1)+T(i,j-1))/Deltay^2)/(2.0/Deltax^2 + 2.0/Deltay^2); % Unrelaxed Gauss-Seidal
-            % T(i,j) = T(i,j) + ( (T(i+1,j)-2*T(i,j)+T(i-1,j))/Deltax^2 + (T(i,j+1)-2*T(i,j)+T(i,j-1))/Deltay^2 ) / (2.0/Deltax^2 + 2.0/Deltay^2); % Relaxation form w/ same performance (no over-relaxation factor)
+            % T(i,j) = T(i,j) + ( (T(i+1,j)-2*T(i,j)+T(i-1,j))/Deltax^2 + (T(i,j+1)-2*T(i,j)+T(i,j-1))/Deltay^2 ) / (2.0/Deltax^2 + 2.0/Deltay^2); % Relaxation form w/ same performance (no OVER-relaxation)
             % overrelaxation: Δτ > 1.0   --Increases rate of convergence, too large will diverge
             T(i,j) = T(i,j) + Deltatau*( (T(i+1,j)-2*T(i,j)+T(i-1,j))/Deltax^2 + (T(i,j+1)-2*T(i,j)+T(i,j-1))/Deltay^2 ) / (2.0/Deltax^2 + 2.0/Deltay^2);
         end
@@ -72,7 +72,7 @@ while (residual > epsilon)
     fprintf(1,'iter = %i, residual = %g\n',iter,log10(residual))
     T_old = T;
     % draw pseudo-time evolution live
-    % contour(x,y,T);
+    % contour(x,y,T,'LineWidth',2);
     % drawnow;
 end
 toc(tstart);
@@ -81,4 +81,4 @@ toc(tstart);
 % ------------------------------------------------------------------------------
 
 % Produce isotherm level contour plot of data
-contour(x,y,T)
+contour(x,y,T,'LineWidth',2)
