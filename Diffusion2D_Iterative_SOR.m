@@ -3,6 +3,8 @@
 % This is an iterative finite-difference solver for 2-dimensional, Laplacian 
 % heat diffusion in cartesian coordinates using Dirichlet boundary conditions
 % ∇⋅∇ T = 0
+% This solver implements a successive over-relaxation algorithm by introducing a
+% pseudo-timestepping term in order to converge more quickly upon the solution
 % ------------------------------------------------------------------------------
 clear all; close all; clc;
 
