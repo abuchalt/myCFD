@@ -98,7 +98,7 @@ function k = pmap(i, j, i_max)
     k = i + (j-1)*i_max;
 end
 
-function [i, j] = revPmap(k, i_max)
-    i = 1 + mod((k-1), i_max);
-    j = 1 + ((k-i)/i_max);
-end
+% function [i, j] = revPmap(k, i_max)
+%     i = 1 + mod((k-1), i_max);
+%     j = 1 + ((k-i)/i_max);
+% end
