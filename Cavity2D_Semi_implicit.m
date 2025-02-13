@@ -90,7 +90,7 @@ iter = 0;
 while (residual > epsilon)
 
     % Enforce velocity boundry condition
-    j = j_max
+    j = j_max;
     for i = 1:i_max
         k = pmap(i, j, i_max);
         u(k,1) = u_lid;
