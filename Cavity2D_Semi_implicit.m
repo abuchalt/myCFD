@@ -21,7 +21,7 @@ fprintf('Maximum number of points in y-direction')
 j_max = input('');
 
 % Input parameters 
-Re = 100.0; % Reynold's number (kinematic viscosity)
+Re = 400.0; % Reynold's number (kinematic viscosity)
 u_lid = 1.0; % velocity at top boundry
 
 % Calculate step sizes
@@ -48,8 +48,6 @@ end
 %% Script
 % ------------------------------------------------------------------------------
 
-% Discretize and convert to a linear system A*T = b
-
 % Init
 A_Psi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Streamfxn Coeff Matrix Sparsely
 A_Omega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Vorticity Coeff Matrix Sparsely
@@ -61,8 +59,8 @@ b_Psi = zeros(i_max*j_max,1); % init RHS
 b_Omega = zeros(i_max*j_max,1);
 
 % Define Solution Variables (1D because we use pointer mapping)
-Psi = zeros(i_max*j_max,1);
-Omega = zeros(i_max*j_max,1);
+Psi = ones(i_max*j_max,1);
+Omega = ones(i_max*j_max,1);
 u = zeros(i_max*j_max,1);
 v = zeros(i_max*j_max,1);
 % "Old" Solution for finding residual
@@ -79,19 +77,14 @@ for i = 2:i_max-1
         k_s = k - i_max;
 
         % pointer mapping goes row-by-row to assemble Coeff. Matrix
-        A_Psi(k,k) = 1.0/Deltatau + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+        A_Psi(k,k) = 1.0/Deltatau + (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
         A_Psi(k,k_e) = (-1.0/Deltax^2)/Re;
         A_Psi(k,k_w) = (-1.0/Deltax^2)/Re;
         A_Psi(k,k_n) = (-1.0/Deltay^2)/Re;
         A_Psi(k,k_s) = (-1.0/Deltay^2)/Re;
-
-        % assemble RHS
-        b_Psi(k,1) = Psi(k,1)/Deltatau + Omega(k,1)/Re;
     end
 end
 A_Psi = sparse(A_Psi); % Enforce A_Psi sparse
-
-% ...
 
 % Begin iteration
 iter = 0;
@@ -117,17 +110,18 @@ while (residual > epsilon)
             v(k,1) = -(Psi(k_w,1)-Psi(k_e,1))/(2.0*Deltax);
 
             % Update vorticity coefficient matrix
-            A_Omega(k,k) = 1.0/Deltatau + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+            A_Omega(k,k) = 1.0/Deltatau + (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
             A_Omega(k,k_e) = (-1.0/Deltax^2)/Re + u(k,1)/(2.0*Deltax);
             A_Omega(k,k_w) = (-1.0/Deltax^2)/Re - u(k,1)/(2.0*Deltax);
             A_Omega(k,k_n) = (-1.0/Deltay^2)/Re + v(k,1)/(2.0*Deltay);
             A_Omega(k,k_s) = (-1.0/Deltay^2)/Re - v(k,1)/(2.0*Deltay);
 
+            % Update RHS
             b_Psi(k,1) = Psi(k,1)/Deltatau + Omega(k,1)/Re;
             b_Omega(k,1) = Omega(k,1)/Deltatau;
         end
     end
-
+    
     % Apply BCs
     % Left BC
     for i = 1:1
@@ -135,7 +129,8 @@ while (residual > epsilon)
             k = pmap(i,j,i_max);
             k_e = k + 1;
             k_ee = k + 2;
-            Omega(k,1) = -(-7*Psi(k,1) + 8*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2));
+            Omega(k,1) = -(-7.0*Psi(k,1) + 8.0*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2));
+            Psi(k,1) = 0;
         end
     end
     % Right BC
@@ -144,7 +139,8 @@ while (residual > epsilon)
             k = pmap(i,j,i_max);
             k_w = k - 1;
             k_ww = k - 2;
-            Omega(k,1) = -(-7*Psi(k,1) + 8*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2));
+            Omega(k,1) = -(-7.0*Psi(k,1) + 8.0*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2));
+            Psi(k,1) = 0;
         end
     end
     % Bottom BC
@@ -153,7 +149,8 @@ while (residual > epsilon)
             k = pmap(i,j,i_max);
             k_n = k + i_max;
             k_nn = k + 2*i_max;
-            Omega(k,1) = -(-7*Psi(k,1) + 8*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2));
+            Omega(k,1) = -(-7.0*Psi(k,1) + 8.0*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2));
+            Psi(k,1) = 0;
         end
     end
     % Top BC
@@ -162,10 +159,11 @@ while (residual > epsilon)
             k = pmap(i,j,i_max);
             k_s = k - i_max;
             k_ss = k - 2*i_max;
-            Omega(k,1) = -((3*u_lid/Deltay) + (-7*Psi(k,1) + 8*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2)));
+            Omega(k,1) = -(3.0*u_lid/Deltay) - (-7.0*Psi(k,1) + 8.0*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2));
+            Psi(k,1) = 0;
         end
     end
-    
+
     % Solve the linear systems for Psi and Omega
     Psi = A_Psi\b_Psi;
     Omega = A_Omega\b_Omega;
