@@ -1,4 +1,4 @@
-%% Cavity2D_Semi_implicit
+%% Cavity2D_Semi_implicit_Fully_coupled
 % ------------------------------------------------------------------------------
 % This is a semi-implicit solver for 2-dimensional Navier-Stokes equations, by
 % lagging the velocity terms in the vorticity transport equation, for a cavity
@@ -51,8 +51,12 @@ end
 % Discretize and convert to a linear system A*T = b
 
 % Init
-A_Psi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Streamfxn Coeff Matrix Sparsely
-A_Omega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Vorticity Coeff Matrix Sparsely
+A_PsiPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Streamfxn Coeff Matrix Sparsely
+A_PsiOmega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Coeff Matrix for Streamfxn Dependence on Vorticity
+A_OmegaOmega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Vorticity Coeff Matrix Sparsely
+A_OmegaPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Coeff Matrix for Vorticity Dependence on Streamfxn
+
+
 for i = 1:i_max*j_max
     A_Psi(i,i) = 1.0;
     A_Omega(i,i) = 1.0;
@@ -85,11 +89,16 @@ for i = 2:i_max-1
         A_Psi(k,k_n) = (-1.0/Deltay^2)/Re;
         A_Psi(k,k_s) = (-1.0/Deltay^2)/Re;
 
+        A_PsiOmega(k,k) = -1.0/Re;
+
         % assemble RHS
-        b_Psi(k,1) = Psi(k,1)/Deltatau + Omega(k,1)/Re;
+        % b_Psi(k,1) = Psi(k,1)/Deltatau + Omega(k,1)/Re;
     end
 end
-A_Psi = sparse(A_Psi); % Enforce A_Psi sparse
+A_PsiPsi = sparse(A_PsiPsi); % Enforce Coeffs sparse
+A_PsiOmega = sparse(A_PsiOmega); 
+A_OmegaOmega = sparse(A_OmegaOmega); 
+A_OmegaPsi = sparse(A_OmegaPsi); 
 
 % ...
 
@@ -117,11 +126,11 @@ while (residual > epsilon)
             v(k,1) = -(Psi(k_w,1)-Psi(k_e,1))/(2.0*Deltax);
 
             % Update vorticity coefficient matrix
-            A_Omega(k,k) = 1.0/Deltatau + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
-            A_Omega(k,k_e) = (-1.0/Deltax^2)/Re + u(k,1)/(2.0*Deltax);
-            A_Omega(k,k_w) = (-1.0/Deltax^2)/Re - u(k,1)/(2.0*Deltax);
-            A_Omega(k,k_n) = (-1.0/Deltay^2)/Re + v(k,1)/(2.0*Deltay);
-            A_Omega(k,k_s) = (-1.0/Deltay^2)/Re - v(k,1)/(2.0*Deltay);
+            A_OmegaOmega(k,k) = 1.0/Deltatau + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+            A_OmegaOmega(k,k_e) = (-1.0/Deltax^2)/Re + u(k,1)/(2.0*Deltax);
+            A_OmegaOmega(k,k_w) = (-1.0/Deltax^2)/Re - u(k,1)/(2.0*Deltax);
+            A_OmegaOmega(k,k_n) = (-1.0/Deltay^2)/Re + v(k,1)/(2.0*Deltay);
+            A_OmegaOmega(k,k_s) = (-1.0/Deltay^2)/Re - v(k,1)/(2.0*Deltay);
 
             b_Psi(k,1) = Psi(k,1)/Deltatau + Omega(k,1)/Re;
             b_Omega(k,1) = Omega(k,1)/Deltatau;
@@ -129,46 +138,24 @@ while (residual > epsilon)
     end
 
     % Apply BCs
+    % [INSERT CODE HERE]
     % Left BC
-    for i = 1:1
-        for j = 1:j_max
-            k = pmap(i,j,i_max);
-            k_e = k + 1;
-            k_ee = k + 2;
-            Omega(k,1) = -(-7*Psi(k,1) + 8*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2));
-        end
-    end
-    % Right BC
-    for i = i_max:i_max
-        for j = 1:j_max
-            k = pmap(i,j,i_max);
-            k_w = k - 1;
-            k_ww = k - 2;
-            Omega(k,1) = -(-7*Psi(k,1) + 8*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2));
-        end
-    end
-    % Bottom BC
-    for i = 1:i_max
-        for j = 1:1
-            k = pmap(i,j,i_max);
-            k_n = k + i_max;
-            k_nn = k + 2*i_max;
-            Omega(k,1) = -(-7*Psi(k,1) + 8*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2));
-        end
-    end
-    % Top BC
-    for i = 1:i_max
-        for j = j_max:j_max
-            k = pmap(i,j,i_max);
-            k_s = k - i_max;
-            k_ss = k - 2*i_max;
-            Omega(k,1) = -((3*u_lid/Deltay) + (-7*Psi(k,1) + 8*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2)));
-        end
-    end
+    % for i = 1:1
+    %     for j = 1:j_max
+    %         k = pmap(i,j,i_max);
+    %         b(k,1) = T_boundry;
+    %     end
+    % end
     
     % Solve the linear systems for Psi and Omega
-    Psi = A_Psi\b_Psi;
-    Omega = A_Omega\b_Omega;
+    M = [A_PsiPsi, A_PsiOmega;
+         A_OmegaPsi, A_OmegaOmega];
+    b = [b_Psi;
+         b_Omega];
+    M = sparse(M); % Enforce Sparse
+    sol = M\b;
+    Psi = sol(1:i_max*j_max);
+    Omega = sol(i_max*j_max:2*i_max*j_max);
 
     % Compute the new residual
     residual = 0.0;
@@ -180,27 +167,9 @@ while (residual > epsilon)
     end
     residual = sqrt(residual)/2.0; % Normalize for # of equations being solved
     residual = residual/(i_max*j_max); % Normalize for DOF
+    iter = iter+1;
     Psi_old = Psi; % Update "old" values
     Omega_old = Omega;
-
-    % Plot solution
-    if mod(iter,100) == 0
-        figure(1);
-        subplot(141);
-        contour(x,y,reshape(Omega, i_max, j_max),[-5 -4 -3 -2 -1 0 1 2 3 4 5 6],'LineWidth',2.0);
-        subplot(142);
-        contour(x,y,reshape(Psi, i_max, j_max),[-0.11 -0.09 -0.07 -0.05 -0.03 -0.01 -0.001 -0.0001 -0.00001 0 0.00001 0.0001 0.001 0.01], 'LineWidth',2.0)
-        subplot(143);
-        quiver(x,y,reshape(u, i_max, j_max),reshape(v, i_max, j_max),20);
-        axis([0 1 0 1]);
-        subplot(144);
-        hold on;
-        plot(iter,log10(residual),'bo');
-        hold off;
-        drawnow;
-    end
-    fprintf(1,'iter = %i, residual = %g\n',iter,log10(residual));
-    iter = iter+1;
 end
 
 %% Output Results
