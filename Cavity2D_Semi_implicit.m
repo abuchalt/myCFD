@@ -129,8 +129,12 @@ while (residual > epsilon)
             k = pmap(i,j,i_max);
             k_e = k + 1;
             k_ee = k + 2;
-            Omega(k,1) = -(-7.0*Psi(k,1) + 8.0*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2));
-            Psi(k,1) = 0;
+            % Vorticity via second-order forward difference
+            A_Omega(k,k) = -1;
+            b_Omega(k,1) = (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2));
+            % No-slip (streamfxn = 0)
+            A_Psi(k,k) = 1;
+            b_Psi(k,1) = 0;
         end
     end
     % Right BC
@@ -139,8 +143,12 @@ while (residual > epsilon)
             k = pmap(i,j,i_max);
             k_w = k - 1;
             k_ww = k - 2;
-            Omega(k,1) = -(-7.0*Psi(k,1) + 8.0*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2));
-            Psi(k,1) = 0;
+            % Vorticity via second-order backward difference
+            A_Omega(k,k) = -1;
+            b_Omega(k,1) = (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2));
+            % No-slip (streamfxn = 0)
+            A_Psi(k,k) = 1;
+            b_Psi(k,1) = 0;
         end
     end
     % Bottom BC
@@ -149,8 +157,12 @@ while (residual > epsilon)
             k = pmap(i,j,i_max);
             k_n = k + i_max;
             k_nn = k + 2*i_max;
-            Omega(k,1) = -(-7.0*Psi(k,1) + 8.0*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2));
-            Psi(k,1) = 0;
+            % Vorticity via second-order forward difference
+            A_Omega(k,k) = -1;
+            b_Omega(k,1) = (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2));
+            % No-slip (streamfxn = 0)
+            A_Psi(k,k) = 1;
+            b_Psi(k,1) = 0;
         end
     end
     % Top BC
@@ -159,8 +171,16 @@ while (residual > epsilon)
             k = pmap(i,j,i_max);
             k_s = k - i_max;
             k_ss = k - 2*i_max;
-            Omega(k,1) = -(3.0*u_lid/Deltay) - (-7.0*Psi(k,1) + 8.0*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2));
-            Psi(k,1) = 0;
+            % Vorticity via second-order backward difference with lid-driven BC
+            A_Omega(k,k) = -1;
+            b_Omega(k,1) = (3.0*u_lid/Deltay) + (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2));
+            % Lid Velocity enforced dPsi/dy = u_lid via backward difference
+            % A_Psi(k,k) = -3.0/(2.0*Deltay);
+            % A_Psi(k,k_s) = 2.0/Deltay;
+            % A_Psi(k,k_ss) = -1.0/(2.0*Deltay);
+            A_Psi(k,k) = 1/Deltay;
+            A_Psi(k,k_s) = -1/Deltay;
+            b_Psi(k,1) = u_lid;
         end
     end
 
@@ -182,7 +202,7 @@ while (residual > epsilon)
     Omega_old = Omega;
 
     % Plot solution
-    if mod(iter,100) == 0
+    if mod(iter,1) == 0
         figure(1);
         subplot(141);
         contour(x,y,reshape(Omega, i_max, j_max),[-5 -4 -3 -2 -1 0 1 2 3 4 5 6],'LineWidth',2.0);
