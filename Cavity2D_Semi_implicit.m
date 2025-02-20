@@ -178,6 +178,8 @@ while (residual > epsilon)
             A_Psi(k,k) = -3.0/(2.0*Deltay);
             A_Psi(k,k_s) = 2.0/Deltay;
             A_Psi(k,k_ss) = -1.0/(2.0*Deltay);
+            % A_Psi(k,k) = 1.0/Deltay;
+            % A_Psi(k,k_s) = -1.0/Deltay;
             b_Psi(k,1) = -u_lid;
         end
     end
@@ -203,14 +205,18 @@ while (residual > epsilon)
     if mod(iter,1) == 0
         figure(1);
         subplot(141);
+        % Plot level curves for vorticity - set levels according to Ghia et al.
         contour(x,y,reshape(Omega, i_max, j_max),[-5 -4 -3 -2 -1 0 1 2 3 4 5 6],'LineWidth',2.0);
         subplot(142);
+        % Plot level curve for streamfxn - set levels according to Ghia et al.
         contour(x,y,reshape(Psi, i_max, j_max),[-0.11 -0.09 -0.07 -0.05 -0.03 -0.01 -0.001 -0.0001 -0.00001 0 0.00001 0.0001 0.001 0.01], 'LineWidth',2.0)
         subplot(143);
+        % Plot u-v vector field (velocity)
         quiver(x,y,reshape(u, i_max, j_max),reshape(v, i_max, j_max),20);
         axis([0 1 0 1]);
         subplot(144);
         hold on;
+        % Plot log10(residual)
         plot(iter,log10(residual),'bo');
         hold off;
         drawnow;
@@ -222,15 +228,7 @@ end
 %% Output Results
 % ------------------------------------------------------------------------------
 
-% [FIX THIS TOO]
-
-% Plot level curves for vorticity - set levels according to Ghia et al.
-
-% Plot level curve for streamfxn - set levels according to Ghia et al.
-
-% Plot u-v vector field (velocity)
-
-% Plot log10(residual)
+% [WIP]
 
 %% Functions
 % ------------------------------------------------------------------------------
