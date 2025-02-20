@@ -175,12 +175,10 @@ while (residual > epsilon)
             A_Omega(k,k) = -1;
             b_Omega(k,1) = (3.0*u_lid/Deltay) + (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2));
             % Lid Velocity enforced dPsi/dy = u_lid via backward difference
-            % A_Psi(k,k) = -3.0/(2.0*Deltay);
-            % A_Psi(k,k_s) = 2.0/Deltay;
-            % A_Psi(k,k_ss) = -1.0/(2.0*Deltay);
-            A_Psi(k,k) = 1/Deltay;
-            A_Psi(k,k_s) = -1/Deltay;
-            b_Psi(k,1) = u_lid;
+            A_Psi(k,k) = -3.0/(2.0*Deltay);
+            A_Psi(k,k_s) = 2.0/Deltay;
+            A_Psi(k,k_ss) = -1.0/(2.0*Deltay);
+            b_Psi(k,1) = -u_lid;
         end
     end
 
