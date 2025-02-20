@@ -77,7 +77,7 @@ for i = 2:i_max-1
         k_s = k - i_max;
 
         % pointer mapping goes row-by-row to assemble Coeff. Matrix
-        A_Psi(k,k) = 1.0/Deltatau + (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
+        A_Psi(k,k) = (1.0/Deltatau) + (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
         A_Psi(k,k_e) = (-1.0/Deltax^2)/Re;
         A_Psi(k,k_w) = (-1.0/Deltax^2)/Re;
         A_Psi(k,k_n) = (-1.0/Deltay^2)/Re;
@@ -134,7 +134,7 @@ while (residual > epsilon)
             b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2)))/Re;
             % No-slip (streamfxn = 0)
             A_Psi(k,k) = 1.0;
-            b_Psi(k,1) = 0;
+            b_Psi(k,1) = 0.0;
         end
     end
     % Right BC
@@ -148,7 +148,7 @@ while (residual > epsilon)
             b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2)))/Re;
             % No-slip (streamfxn = 0)
             A_Psi(k,k) = 1.0;
-            b_Psi(k,1) = 0;
+            b_Psi(k,1) = 0.0;
         end
     end
     % Bottom BC
@@ -162,7 +162,7 @@ while (residual > epsilon)
             b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2)))/Re;
             % No-slip (streamfxn = 0)
             A_Psi(k,k) = 1.0;
-            b_Psi(k,1) = 0;
+            b_Psi(k,1) = 0.0;
         end
     end
     % Top BC
@@ -180,7 +180,7 @@ while (residual > epsilon)
             A_Psi(k,k_ss) = -1.0/(2.0*Deltay);
             % A_Psi(k,k) = 1.0/Deltay;
             % A_Psi(k,k_s) = -1.0/Deltay;
-            b_Psi(k,1) = -u_lid;
+            b_Psi(k,1) = -1.0*u_lid;
         end
     end
 
