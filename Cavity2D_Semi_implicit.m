@@ -59,8 +59,8 @@ b_Psi = zeros(i_max*j_max,1); % init RHS
 b_Omega = zeros(i_max*j_max,1);
 
 % Define Solution Variables (1D because we use pointer mapping)
-Psi = ones(i_max*j_max,1);
-Omega = ones(i_max*j_max,1);
+Psi = zeros(i_max*j_max,1);
+Omega = zeros(i_max*j_max,1);
 u = zeros(i_max*j_max,1);
 v = zeros(i_max*j_max,1);
 % "Old" Solution for finding residual
@@ -107,7 +107,7 @@ while (residual > epsilon)
 
             % Define velocity (u,v) based on initial Psi values
             u(k,1) = (Psi(k_n,1)-Psi(k_s,1))/(2.0*Deltay);
-            v(k,1) = -(Psi(k_w,1)-Psi(k_e,1))/(2.0*Deltax);
+            v(k,1) = -(Psi(k_e,1)-Psi(k_w,1))/(2.0*Deltax);
 
             % Update vorticity coefficient matrix
             A_Omega(k,k) = 1.0/Deltatau + (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
@@ -130,10 +130,10 @@ while (residual > epsilon)
             k_e = k + 1;
             k_ee = k + 2;
             % Vorticity via second-order forward difference
-            A_Omega(k,k) = -1;
-            b_Omega(k,1) = (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2));
+            A_Omega(k,k) = -1.0/Re;
+            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2)))/Re;
             % No-slip (streamfxn = 0)
-            A_Psi(k,k) = 1;
+            A_Psi(k,k) = 1.0;
             b_Psi(k,1) = 0;
         end
     end
@@ -144,10 +144,10 @@ while (residual > epsilon)
             k_w = k - 1;
             k_ww = k - 2;
             % Vorticity via second-order backward difference
-            A_Omega(k,k) = -1;
-            b_Omega(k,1) = (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2));
+            A_Omega(k,k) = -1.0/Re;
+            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2)))/Re;
             % No-slip (streamfxn = 0)
-            A_Psi(k,k) = 1;
+            A_Psi(k,k) = 1.0;
             b_Psi(k,1) = 0;
         end
     end
@@ -158,10 +158,10 @@ while (residual > epsilon)
             k_n = k + i_max;
             k_nn = k + 2*i_max;
             % Vorticity via second-order forward difference
-            A_Omega(k,k) = -1;
-            b_Omega(k,1) = (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2));
+            A_Omega(k,k) = -1.0/Re;
+            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2)))/Re;
             % No-slip (streamfxn = 0)
-            A_Psi(k,k) = 1;
+            A_Psi(k,k) = 1.0;
             b_Psi(k,1) = 0;
         end
     end
@@ -172,8 +172,8 @@ while (residual > epsilon)
             k_s = k - i_max;
             k_ss = k - 2*i_max;
             % Vorticity via second-order backward difference with lid-driven BC
-            A_Omega(k,k) = -1;
-            b_Omega(k,1) = (3.0*u_lid/Deltay) + (1/Re) * (-7.0*Psi(k,1) + 8.0*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2));
+            A_Omega(k,k) = -1.0/Re;
+            b_Omega(k,1) = ((3.0*u_lid/Deltay) + (-7.0*Psi(k,1) + 8.0*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2)))/Re;
             % Lid Velocity enforced dPsi/dy = u_lid via backward difference
             A_Psi(k,k) = -3.0/(2.0*Deltay);
             A_Psi(k,k_s) = 2.0/Deltay;
