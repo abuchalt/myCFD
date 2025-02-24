@@ -22,7 +22,7 @@ j_max = input('');
 
 % Input parameters 
 Re = 100.0; % Reynold's number (kinematic viscosity)
-u_lid = 1.0; % velocity at top boundry
+u_lid = 1.0; % velocity at top boundary
 
 % Calculate step sizes
 Deltax = w/(i_max-1);
@@ -90,7 +90,7 @@ A_Psi = sparse(A_Psi); % Enforce A_Psi sparse
 iter = 0;
 while (residual > epsilon)
 
-    % Enforce velocity boundry condition
+    % Enforce velocity boundary condition
     j = j_max;
     for i = 1:i_max
         k = pmap(i, j, i_max);

@@ -32,7 +32,7 @@ Deltay = h/(j_max-1);
 % Equivalent to parabolic equation in 1D - 
 % the diffusion number determined by Reynold's number for this scheme should be s.t. d <= 0.5 to ensure stability 
 % d = 1/Re * (dtau/dx)^2
-Deltatau = Re*Deltax^2/2.0;
+Deltatau = Re*Deltax^2/1.0;
 % And define variables for pseudo-timestepping
 residual = 1.0E5; % init residual
 epsilon = 1.0E-12; % drive residual down to this value before terminating
@@ -55,11 +55,9 @@ A_PsiPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Streamfx
 A_PsiOmega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Coeff Matrix for Streamfxn Dependence on Vorticity
 A_OmegaOmega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Vorticity Coeff Matrix Sparsely
 A_OmegaPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Coeff Matrix for Vorticity Dependence on Streamfxn
-
-
 for i = 1:i_max*j_max
-    A_Psi(i,i) = 1.0;
-    A_Omega(i,i) = 1.0;
+    A_PsiPsi(i,i) = 1.0;
+    A_OmegaOmega(i,i) = 1.0;
 end
 b_Psi = zeros(i_max*j_max,1); % init RHS
 b_Omega = zeros(i_max*j_max,1);
@@ -83,24 +81,19 @@ for i = 2:i_max-1
         k_s = k - i_max;
 
         % pointer mapping goes row-by-row to assemble Coeff. Matrix
-        A_Psi(k,k) = 1.0/Deltatau + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
-        A_Psi(k,k_e) = (-1.0/Deltax^2)/Re;
-        A_Psi(k,k_w) = (-1.0/Deltax^2)/Re;
-        A_Psi(k,k_n) = (-1.0/Deltay^2)/Re;
-        A_Psi(k,k_s) = (-1.0/Deltay^2)/Re;
+        A_PsiPsi(k,k) = (1.0/Deltatau) + (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
+        A_PsiPsi(k,k_e) = (-1.0/Deltax^2)/Re;
+        A_PsiPsi(k,k_w) = (-1.0/Deltax^2)/Re;
+        A_PsiPsi(k,k_n) = (-1.0/Deltay^2)/Re;
+        A_PsiPsi(k,k_s) = (-1.0/Deltay^2)/Re;
 
         A_PsiOmega(k,k) = -1.0/Re;
-
-        % assemble RHS
-        % b_Psi(k,1) = Psi(k,1)/Deltatau + Omega(k,1)/Re;
     end
 end
 A_PsiPsi = sparse(A_PsiPsi); % Enforce Coeffs sparse
 A_PsiOmega = sparse(A_PsiOmega); 
 A_OmegaOmega = sparse(A_OmegaOmega); 
-A_OmegaPsi = sparse(A_OmegaPsi); 
-
-% ...
+A_OmegaPsi = sparse(A_OmegaPsi);
 
 % Begin iteration
 iter = 0;
@@ -123,7 +116,7 @@ while (residual > epsilon)
 
             % Define velocity (u,v) based on initial Psi values
             u(k,1) = (Psi(k_n,1)-Psi(k_s,1))/(2.0*Deltay);
-            v(k,1) = -(Psi(k_w,1)-Psi(k_e,1))/(2.0*Deltax);
+            v(k,1) = -(Psi(k_e,1)-Psi(k_w,1))/(2.0*Deltax);
 
             % Update vorticity coefficient matrix
             A_OmegaOmega(k,k) = 1.0/Deltatau + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
@@ -132,20 +125,72 @@ while (residual > epsilon)
             A_OmegaOmega(k,k_n) = (-1.0/Deltay^2)/Re + v(k,1)/(2.0*Deltay);
             A_OmegaOmega(k,k_s) = (-1.0/Deltay^2)/Re - v(k,1)/(2.0*Deltay);
 
-            b_Psi(k,1) = Psi(k,1)/Deltatau + Omega(k,1)/Re;
+            b_Psi(k,1) = Psi(k,1)/Deltatau;
             b_Omega(k,1) = Omega(k,1)/Deltatau;
         end
     end
 
     % Apply BCs
-    % [INSERT CODE HERE]
     % Left BC
-    % for i = 1:1
-    %     for j = 1:j_max
-    %         k = pmap(i,j,i_max);
-    %         b(k,1) = T_boundry;
-    %     end
-    % end
+    for i = 1:1
+        for j = 1:j_max
+            k = pmap(i,j,i_max);
+            k_e = k + 1;
+            k_ee = k + 2;
+            % Vorticity via second-order forward difference
+            A_OmegaOmega(k,k) = -1.0/Re;
+            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2)))/Re;
+            % No-slip (streamfxn = 0)
+            A_PsiPsi(k,k) = 1.0;
+            b_Psi(k,1) = 0.0;
+        end
+    end
+    % Right BC
+    for i = i_max:i_max
+        for j = 1:j_max
+            k = pmap(i,j,i_max);
+            k_w = k - 1;
+            k_ww = k - 2;
+            % Vorticity via second-order backward difference
+            A_OmegaOmega(k,k) = -1.0/Re;
+            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2)))/Re;
+            % No-slip (streamfxn = 0)
+            A_PsiPsi(k,k) = 1.0;
+            b_Psi(k,1) = 0.0;
+        end
+    end
+    % Bottom BC
+    for i = 1:i_max
+        for j = 1:1
+            k = pmap(i,j,i_max);
+            k_n = k + i_max;
+            k_nn = k + 2*i_max;
+            % Vorticity via second-order forward difference
+            A_OmegaOmega(k,k) = -1.0/Re;
+            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2)))/Re;
+            % No-slip (streamfxn = 0)
+            A_PsiPsi(k,k) = 1.0;
+            b_Psi(k,1) = 0.0;
+        end
+    end
+    % Top BC
+    for i = 1:i_max
+        for j = j_max:j_max
+            k = pmap(i,j,i_max);
+            k_s = k - i_max;
+            k_ss = k - 2*i_max;
+            % Vorticity via second-order backward difference with lid-driven BC
+            A_OmegaOmega(k,k) = -1.0/Re;
+            b_Omega(k,1) = ((3.0*u_lid/Deltay) + (-7.0*Psi(k,1) + 8.0*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2)))/Re;
+            % Lid Velocity enforced dPsi/dy = u_lid via backward difference
+            A_PsiPsi(k,k) = -3.0/(2.0*Deltay);
+            A_PsiPsi(k,k_s) = 2.0/Deltay;
+            A_PsiPsi(k,k_ss) = -1.0/(2.0*Deltay);
+            % A_PsiPsi(k,k) = 1.0/Deltay;
+            % A_PsiPsi(k,k_s) = -1.0/Deltay;
+            b_Psi(k,1) = -1.0*u_lid;
+        end
+    end
     
     % Solve the linear systems for Psi and Omega
     M = [A_PsiPsi, A_PsiOmega;
@@ -155,7 +200,7 @@ while (residual > epsilon)
     M = sparse(M); % Enforce Sparse
     sol = M\b;
     Psi = sol(1:i_max*j_max);
-    Omega = sol(i_max*j_max:2*i_max*j_max);
+    Omega = sol((i_max*j_max)+1:2*i_max*j_max);
 
     % Compute the new residual
     residual = 0.0;
@@ -167,23 +212,67 @@ while (residual > epsilon)
     end
     residual = sqrt(residual)/2.0; % Normalize for # of equations being solved
     residual = residual/(i_max*j_max); % Normalize for DOF
-    iter = iter+1;
     Psi_old = Psi; % Update "old" values
     Omega_old = Omega;
+
+    % Plot solution
+    if mod(iter,100) == 0
+        uplot = reshape(u, i_max, j_max);
+        vplot = reshape(v, i_max, j_max);
+        figure(1);
+        subplot(141);
+        % Plot level curves for vorticity - set levels according to Ghia et al.
+        contour(x,y,reshape(Omega, i_max, j_max),[-3.0 -2.0 -1.0 -0.5 0.0 0.5 1.0 2.0 3.0 4.0 5.0],'LineWidth',2.0);
+        ylabel('y');
+        xlabel('x');
+        title('Vorticity Contour');
+        pbaspect([w h 1])
+        subplot(142);
+        % Plot level curve for streamfxn - set levels according to Ghia et al.
+        contour(x,y,reshape(Psi, i_max, j_max),[-0.1175 -0.1150 -0.11 -0.1 -0.09 -0.07 -0.05 -0.03 -0.01 -1E-4 -1E-5 -1E-7 -1E-10 1E-8 1E-7 1E-6 1E-5 5E-5 1E-4 2.5E-4 5E-4 1E-3 1.5E-3 3E-3], 'LineWidth',2.0)
+        ylabel('y');
+        xlabel('x');
+        title('Streamline Pattern');
+        pbaspect([w h 1])
+        subplot(143);
+        % Plot u-v vector field (velocity)
+        quiver(x,y,uplot,vplot,20);
+        ylabel('y');
+        xlabel('x');
+        title('Velocity Vector Field');
+        axis([0 1 0 1]);
+        pbaspect([w h 1])
+        subplot(144);
+        hold on;
+        % Plot log10(residual)
+        plot(iter,log10(residual),'bo');
+        grid on;
+        ylabel('log10(residual)');
+        xlabel('iteration');
+        title('Convergence Behavior');
+        hold off;
+        drawnow;
+    end
+    fprintf(1,'iter = %i, residual = %g\n',iter,log10(residual));
+    iter = iter+1;
 end
 
 %% Output Results
 % ------------------------------------------------------------------------------
 
-% [FIX THIS TOO]
+figure(2);
+plot(x(:,round((j_max+1)/2)), vplot(:,round((j_max+1)/2)));
+grid on;
+ylabel('v');
+xlabel('x');
+title('Vertical Component of Velocity Through Geometric Center');
 
-% Plot level curves for vorticity - set levels according to Ghia et al.
-
-% Plot level curve for streamfxn - set levels according to Ghia et al.
-
-% Plot u-v vector field (velocity)
-
-% Plot log10(residual)
+figure(3);
+plot(uplot(round((i_max+1)/2),:), y(round((i_max+1)/2),:));
+grid on;
+ylabel('y');
+xlabel('u');
+title('Horizontal Component of Velocity Through Geometric Center');
 
 %% Functions
 % ------------------------------------------------------------------------------
