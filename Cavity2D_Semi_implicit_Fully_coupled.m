@@ -20,7 +20,7 @@ i_max = input('');
 fprintf('Maximum number of points in y-direction')
 j_max = input('');
 
-% Input parameters 
+% Input parameters
 Re = 100.0; % Reynold's number (kinematic viscosity)
 u_lid = 1.0; % velocity at top boundry
 
@@ -32,7 +32,8 @@ Deltay = h/(j_max-1);
 % Equivalent to parabolic equation in 1D - 
 % the diffusion number determined by Reynold's number for this scheme should be s.t. d <= 0.5 to ensure stability 
 % d = 1/Re * (dtau/dx)^2
-Deltatau = Re*Deltax^2/1.0;
+CFL = 0.05;
+Deltatau = Re*Deltax^2/CFL;
 % And define variables for pseudo-timestepping
 residual = 1.0E5; % init residual
 epsilon = 1.0E-12; % drive residual down to this value before terminating
@@ -44,6 +45,11 @@ for i = 1:i_max
         y(i,j) = Deltay*(j-1);
     end
 end
+
+% File Info
+mydir='C:\\Users\\Bucky\\Downloads\\2DCavity_Results';
+subfolder='Re'+string(Re)+'_'+string(i_max)+'x'+string(j_max);
+mkdir(fullfile(mydir,subfolder));
 
 %% Script
 % ------------------------------------------------------------------------------
@@ -96,8 +102,11 @@ A_OmegaOmega = sparse(A_OmegaOmega);
 A_OmegaPsi = sparse(A_OmegaPsi);
 
 % Begin iteration
+tTot = 0;
 iter = 0;
 while (residual > epsilon)
+
+    tStart = tic;
 
     % Enforce velocity boundry condition
     j = j_max;
@@ -139,7 +148,10 @@ while (residual > epsilon)
             k_ee = k + 2;
             % Vorticity via second-order forward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_e,1) - Psi(k_ee,1))/(2.0*(Deltax^2)))/Re;
+            A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k_e) = (-8.0/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k_ee) = (1.0/(2.0*(Deltay^2)))/Re;
+            b_Omega(k,1) = 0.0;
             % No-slip (streamfxn = 0)
             A_PsiPsi(k,k) = 1.0;
             b_Psi(k,1) = 0.0;
@@ -153,7 +165,10 @@ while (residual > epsilon)
             k_ww = k - 2;
             % Vorticity via second-order backward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_w,1) - Psi(k_ww,1))/(2.0*(Deltax^2)))/Re;
+            A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k_w) = (-8.0/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k_ww) = (1.0/(2.0*(Deltay^2)))/Re;
+            b_Omega(k,1) = 0.0;
             % No-slip (streamfxn = 0)
             A_PsiPsi(k,k) = 1.0;
             b_Psi(k,1) = 0.0;
@@ -167,7 +182,10 @@ while (residual > epsilon)
             k_nn = k + 2*i_max;
             % Vorticity via second-order forward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            b_Omega(k,1) = ((-7.0*Psi(k,1) + 8.0*Psi(k_n,1) - Psi(k_nn,1))/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k_n) = (-8.0/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k_nn) = (1.0/(2.0*(Deltay^2)))/Re;
+            b_Omega(k,1) = 0.0;
             % No-slip (streamfxn = 0)
             A_PsiPsi(k,k) = 1.0;
             b_Psi(k,1) = 0.0;
@@ -181,14 +199,17 @@ while (residual > epsilon)
             k_ss = k - 2*i_max;
             % Vorticity via second-order backward difference with lid-driven BC
             A_OmegaOmega(k,k) = -1.0/Re;
-            b_Omega(k,1) = ((3.0*u_lid/Deltay) + (-7.0*Psi(k,1) + 8.0*Psi(k_s,1) - Psi(k_ss,1))/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k_s) = (-8.0/(2.0*(Deltay^2)))/Re;
+            A_OmegaPsi(k,k_ss) = (1.0/(2.0*(Deltay^2)))/Re;
+            b_Omega(k,1) = (3.0*u_lid/Deltay)/Re;
             % Lid Velocity enforced dPsi/dy = u_lid via backward difference
-            A_PsiPsi(k,k) = -3.0/(2.0*Deltay);
-            A_PsiPsi(k,k_s) = 2.0/Deltay;
-            A_PsiPsi(k,k_ss) = -1.0/(2.0*Deltay);
-            % A_PsiPsi(k,k) = 1.0/Deltay;
-            % A_PsiPsi(k,k_s) = -1.0/Deltay;
-            b_Psi(k,1) = -1.0*u_lid;
+            % A_PsiPsi(k,k) = -3.0/(2.0*Deltay);
+            % A_PsiPsi(k,k_s) = 2.0/Deltay;
+            % A_PsiPsi(k,k_ss) = -1.0/(2.0*Deltay);
+            % b_Psi(k,1) = -1.0*u_lid;
+            A_PsiPsi(k,k) = 1.0;
+            b_Psi(k,1) = 0.0;
         end
     end
     
@@ -215,34 +236,35 @@ while (residual > epsilon)
     Psi_old = Psi; % Update "old" values
     Omega_old = Omega;
 
+    tTot = tTot + toc(tStart);
+
     % Plot solution
     if mod(iter,100) == 0
         uplot = reshape(u, i_max, j_max);
         vplot = reshape(v, i_max, j_max);
         figure(1);
-        subplot(141);
         % Plot level curves for vorticity - set levels according to Ghia et al.
-        contour(x,y,reshape(Omega, i_max, j_max),[-3.0 -2.0 -1.0 -0.5 0.0 0.5 1.0 2.0 3.0 4.0 5.0],'LineWidth',2.0);
+        contour(x,y,reshape(Omega, i_max, j_max),[-5.0 -4.0 -3.0 -2.0 -1.0 -0.5 0.0 0.5 1.0 2.0 3.0],'LineWidth',2.0);
         ylabel('y');
         xlabel('x');
         title('Vorticity Contour');
-        pbaspect([w h 1])
-        subplot(142);
+        pbaspect([w h 1]);
+        figure(2);
         % Plot level curve for streamfxn - set levels according to Ghia et al.
         contour(x,y,reshape(Psi, i_max, j_max),[-0.1175 -0.1150 -0.11 -0.1 -0.09 -0.07 -0.05 -0.03 -0.01 -1E-4 -1E-5 -1E-7 -1E-10 1E-8 1E-7 1E-6 1E-5 5E-5 1E-4 2.5E-4 5E-4 1E-3 1.5E-3 3E-3], 'LineWidth',2.0)
         ylabel('y');
         xlabel('x');
         title('Streamline Pattern');
-        pbaspect([w h 1])
-        subplot(143);
+        pbaspect([w h 1]);
+        figure(3);
         % Plot u-v vector field (velocity)
         quiver(x,y,uplot,vplot,20);
         ylabel('y');
         xlabel('x');
         title('Velocity Vector Field');
         axis([0 1 0 1]);
-        pbaspect([w h 1])
-        subplot(144);
+        pbaspect([w h 1]);
+        figure(4);
         hold on;
         % Plot log10(residual)
         plot(iter,log10(residual),'bo');
@@ -260,19 +282,37 @@ end
 %% Output Results
 % ------------------------------------------------------------------------------
 
-figure(2);
+figure(5);
 plot(x(:,round((j_max+1)/2)), vplot(:,round((j_max+1)/2)));
 grid on;
 ylabel('v');
 xlabel('x');
 title('Vertical Component of Velocity Through Geometric Center');
 
-figure(3);
+figure(6);
 plot(uplot(round((i_max+1)/2),:), y(round((i_max+1)/2),:));
 grid on;
 ylabel('y');
 xlabel('u');
 title('Horizontal Component of Velocity Through Geometric Center');
+
+% Save Final Plots
+saveas(figure(1),fullfile(mydir,subfolder,subfolder+'_vorticity.jpg'));
+saveas(figure(2),fullfile(mydir,subfolder,subfolder+'_streamfxn.jpg'));
+saveas(figure(3),fullfile(mydir,subfolder,subfolder+'_velocity.jpg'));
+saveas(figure(4),fullfile(mydir,subfolder,subfolder+'_convergence.jpg'));
+saveas(figure(5),fullfile(mydir,subfolder,subfolder+'_verticalVel.jpg'));
+saveas(figure(6),fullfile(mydir,subfolder,subfolder+'_horizontalVel.jpg'));
+
+% And Solution Matrices
+save(fullfile(mydir,subfolder,subfolder+'_Psi.mat'), 'Psi')
+save(fullfile(mydir,subfolder,subfolder+'_Omega.mat'), 'Omega')
+
+% And Timing Info
+tAvg = tTot/iter;
+fid = fopen(fullfile(mydir,subfolder,'time.txt'),'wt');
+fprintf(fid, 'Total CPU-time: %s s\nAverage Time per Iteration: %s s\nPseudotime Step: Re*Deltax^2/%s', string(tTot), string(tAvg), string(CFL));
+fclose(fid);
 
 %% Functions
 % ------------------------------------------------------------------------------

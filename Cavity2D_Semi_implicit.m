@@ -206,26 +206,28 @@ while (residual > epsilon)
         uplot = reshape(u, i_max, j_max);
         vplot = reshape(v, i_max, j_max);
         figure(1);
-        subplot(141);
         % Plot level curves for vorticity - set levels according to Ghia et al.
         contour(x,y,reshape(Omega, i_max, j_max),[-3.0 -2.0 -1.0 -0.5 0.0 0.5 1.0 2.0 3.0 4.0 5.0],'LineWidth',2.0);
         ylabel('y');
         xlabel('x');
         title('Vorticity Contour');
-        subplot(142);
+        pbaspect([w h 1]);
+        figure(2);
         % Plot level curve for streamfxn - set levels according to Ghia et al.
         contour(x,y,reshape(Psi, i_max, j_max),[-0.1175 -0.1150 -0.11 -0.1 -0.09 -0.07 -0.05 -0.03 -0.01 -1E-4 -1E-5 -1E-7 -1E-10 1E-8 1E-7 1E-6 1E-5 5E-5 1E-4 2.5E-4 5E-4 1E-3 1.5E-3 3E-3], 'LineWidth',2.0)
         ylabel('y');
         xlabel('x');
         title('Streamline Pattern');
-        subplot(143);
+        pbaspect([w h 1]);
+        figure(3);
         % Plot u-v vector field (velocity)
         quiver(x,y,uplot,vplot,20);
         ylabel('y');
         xlabel('x');
         title('Velocity Vector Field');
         axis([0 1 0 1]);
-        subplot(144);
+        pbaspect([w h 1]);
+        figure(4);
         hold on;
         % Plot log10(residual)
         plot(iter,log10(residual),'bo');
