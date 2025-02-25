@@ -1,7 +1,7 @@
-%% Cavity2D_Semi_implicit_Fully_coupled
+%% Cavity2D_Fully_Implicit
 % ------------------------------------------------------------------------------
-% This is a semi-implicit solver for 2-dimensional Navier-Stokes equations, by
-% lagging the velocity terms in the vorticity transport equation, for a cavity
+% This is a fully implicit solver for 2-dimensional Navier-Stokes equations, via
+% perturbation method applied to the vorticity transport equation, for a cavity
 % with tangential flow
 % ------------------------------------------------------------------------------
 clear all; close all; clc;
