@@ -148,7 +148,7 @@ while (residual > epsilon)
             k_ee = k + 2;
             % Vorticity via second-order forward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
+            %A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_e) = (-8.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_ee) = (1.0/(2.0*(Deltay^2)))/Re;
             b_Omega(k,1) = 0.0;
@@ -165,7 +165,7 @@ while (residual > epsilon)
             k_ww = k - 2;
             % Vorticity via second-order backward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
+            %A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_w) = (-8.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_ww) = (1.0/(2.0*(Deltay^2)))/Re;
             b_Omega(k,1) = 0.0;
@@ -182,7 +182,7 @@ while (residual > epsilon)
             k_nn = k + 2*i_max;
             % Vorticity via second-order forward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
+            %A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_n) = (-8.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_nn) = (1.0/(2.0*(Deltay^2)))/Re;
             b_Omega(k,1) = 0.0;
@@ -199,15 +199,11 @@ while (residual > epsilon)
             k_ss = k - 2*i_max;
             % Vorticity via second-order backward difference with lid-driven BC
             A_OmegaOmega(k,k) = -1.0/Re;
-            A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
+            %A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_s) = (-8.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_ss) = (1.0/(2.0*(Deltay^2)))/Re;
             b_Omega(k,1) = (3.0*u_lid/Deltay)/Re;
-            % Lid Velocity enforced dPsi/dy = u_lid via backward difference
-            % A_PsiPsi(k,k) = -3.0/(2.0*Deltay);
-            % A_PsiPsi(k,k_s) = 2.0/Deltay;
-            % A_PsiPsi(k,k_ss) = -1.0/(2.0*Deltay);
-            % b_Psi(k,1) = -1.0*u_lid;
+            % Lid Velocity enforced (streamfxn = constant)
             A_PsiPsi(k,k) = 1.0;
             b_Psi(k,1) = 0.0;
         end
