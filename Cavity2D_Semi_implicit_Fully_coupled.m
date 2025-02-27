@@ -30,10 +30,10 @@ Deltay = h/(j_max-1);
 
 % Define pseudo-timestep
 % Equivalent to parabolic equation in 1D - 
-% the diffusion number determined by Reynold's number for this scheme should be s.t. d <= 0.5 to ensure stability 
+% the diffusion number determined by Reynold's number for an UNCOUPLED scheme should be s.t. d <= 0.5 to ensure stability 
 % d = 1/Re * (dtau/dx)^2
-CFL = 0.05;
-Deltatau = Re*Deltax^2/CFL;
+scale = 0.05;
+Deltatau = Re*Deltax^2/scale;
 % And define variables for pseudo-timestepping
 residual = 1.0E5; % init residual
 epsilon = 1.0E-12; % drive residual down to this value before terminating
@@ -148,7 +148,6 @@ while (residual > epsilon)
             k_ee = k + 2;
             % Vorticity via second-order forward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            %A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_e) = (-8.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_ee) = (1.0/(2.0*(Deltay^2)))/Re;
             b_Omega(k,1) = 0.0;
@@ -165,7 +164,6 @@ while (residual > epsilon)
             k_ww = k - 2;
             % Vorticity via second-order backward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            %A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_w) = (-8.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_ww) = (1.0/(2.0*(Deltay^2)))/Re;
             b_Omega(k,1) = 0.0;
@@ -182,7 +180,6 @@ while (residual > epsilon)
             k_nn = k + 2*i_max;
             % Vorticity via second-order forward difference
             A_OmegaOmega(k,k) = -1.0/Re;
-            %A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_n) = (-8.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_nn) = (1.0/(2.0*(Deltay^2)))/Re;
             b_Omega(k,1) = 0.0;
@@ -199,7 +196,6 @@ while (residual > epsilon)
             k_ss = k - 2*i_max;
             % Vorticity via second-order backward difference with lid-driven BC
             A_OmegaOmega(k,k) = -1.0/Re;
-            %A_OmegaPsi(k,k) = (7.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_s) = (-8.0/(2.0*(Deltay^2)))/Re;
             A_OmegaPsi(k,k_ss) = (1.0/(2.0*(Deltay^2)))/Re;
             b_Omega(k,1) = (3.0*u_lid/Deltay)/Re;
@@ -316,8 +312,3 @@ fclose(fid);
 function k = pmap(i, j, i_max)
     k = i + (j-1)*i_max;
 end
-
-% function [i, j] = revPmap(k, i_max)
-%     i = 1 + mod((k-1), i_max);
-%     j = 1 + ((k-i)/i_max);
-% end
