@@ -21,7 +21,7 @@ fprintf('Maximum number of points in y-direction')
 j_max = input('');
 
 % Input parameters
-Re = 100.0; % Reynold's number (kinematic viscosity)
+Re = 50.0; % Reynold's number (kinematic viscosity)
 u_lid = 1.0; % velocity at top boundry
 
 % Calculate step sizes
@@ -29,11 +29,7 @@ Deltax = w/(i_max-1);
 Deltay = h/(j_max-1);
 
 % Define pseudo-timestep
-% Equivalent to parabolic equation in 1D - 
-% the diffusion number determined by Reynold's number for this scheme should be s.t. d <= 0.5 to ensure stability 
-% d = 1/Re * (dtau/dx)^2
-CFL = 0.05;
-Deltatau = Re*Deltax^2/CFL;
+Deltatau = 100;
 % And define variables for pseudo-timestepping
 residual = 1.0E5; % init residual
 epsilon = 1.0E-12; % drive residual down to this value before terminating
@@ -47,7 +43,7 @@ for i = 1:i_max
 end
 
 % File Info
-mydir='C:\\Users\\Bucky\\Downloads\\2DCavity_Results';
+mydir='C:\\Users\\Bucky\\Downloads\\fullyCoupled_Results';
 subfolder='Re'+string(Re)+'_'+string(i_max)+'x'+string(j_max);
 mkdir(fullfile(mydir,subfolder));
 
@@ -61,10 +57,10 @@ A_PsiPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Streamfx
 A_PsiOmega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Coeff Matrix for Streamfxn Dependence on Vorticity
 A_OmegaOmega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Vorticity Coeff Matrix Sparsely
 A_OmegaPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Coeff Matrix for Vorticity Dependence on Streamfxn
-for i = 1:i_max*j_max
-    A_PsiPsi(i,i) = 1.0;
-    A_OmegaOmega(i,i) = 1.0;
-end
+% for i = 1:i_max*j_max
+%     A_PsiPsi(i,i) = 1.0;
+%     A_OmegaOmega(i,i) = 1.0;
+% end
 b_Psi = zeros(i_max*j_max,1); % init RHS
 b_Omega = zeros(i_max*j_max,1);
 
@@ -88,6 +84,7 @@ for i = 2:i_max-1
 
         % pointer mapping goes row-by-row to assemble Coeff. Matrix
         A_PsiPsi(k,k) = (1.0/Deltatau) + (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
+        % A_PsiPsi(k,k) = (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
         A_PsiPsi(k,k_e) = (-1.0/Deltax^2)/Re;
         A_PsiPsi(k,k_w) = (-1.0/Deltax^2)/Re;
         A_PsiPsi(k,k_n) = (-1.0/Deltay^2)/Re;
@@ -129,18 +126,21 @@ while (residual > epsilon)
 
             % Update vorticity coefficient matrix
             A_OmegaOmega(k,k) = 1.0/Deltatau + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+            % A_OmegaOmega(k,k) = (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
             A_OmegaOmega(k,k_e) = (-1.0/Deltax^2)/Re + u(k,1)/(2.0*Deltax);
             A_OmegaOmega(k,k_w) = (-1.0/Deltax^2)/Re - u(k,1)/(2.0*Deltax);
             A_OmegaOmega(k,k_n) = (-1.0/Deltay^2)/Re + v(k,1)/(2.0*Deltay);
             A_OmegaOmega(k,k_s) = (-1.0/Deltay^2)/Re - v(k,1)/(2.0*Deltay);
 
-            A_OmegaPsi(k,k_e) = -(Omega(kn,1)-Omega(ks,1))/(4*Deltay*Deltax);
-            A_OmegaPsi(k,k_w) = (Omega(kn,1)-Omega(ks,1))/(4*Deltay*Deltax);
-            A_OmegaPsi(k,k_n) = (Omega(ke,1)-Omega(kw,1))/(4*Deltay*Deltax);
-            A_OmegaPsi(k,k_s) = -(Omega(ke,1)-Omega(kw,1))/(4*Deltay*Deltax);
+            A_OmegaPsi(k,k_e) = -(Omega(k_n,1)-Omega(k_s,1))/(4.0*Deltay*Deltax);
+            A_OmegaPsi(k,k_w) = (Omega(k_n,1)-Omega(k_s,1))/(4.0*Deltay*Deltax);
+            A_OmegaPsi(k,k_n) = (Omega(k_e,1)-Omega(k_w,1))/(4.0*Deltay*Deltax);
+            A_OmegaPsi(k,k_s) = -(Omega(k_e,1)-Omega(k_w,1))/(4.0*Deltay*Deltax);
 
             b_Psi(k,1) = Psi(k,1)/Deltatau;
             b_Omega(k,1) = Omega(k,1)/Deltatau;
+            % b_Psi(k,1) = 0;
+            % b_Omega(k,1) = 0;
         end
     end
 
@@ -236,7 +236,7 @@ while (residual > epsilon)
     tTot = tTot + toc(tStart);
 
     % Plot solution
-    if mod(iter,100) == 0
+    if mod(iter,10) == 0
         uplot = reshape(u, i_max, j_max);
         vplot = reshape(v, i_max, j_max);
         figure(1);
@@ -308,7 +308,7 @@ save(fullfile(mydir,subfolder,subfolder+'_Omega.mat'), 'Omega')
 % And Timing Info
 tAvg = tTot/iter;
 fid = fopen(fullfile(mydir,subfolder,'time.txt'),'wt');
-fprintf(fid, 'Total CPU-time: %s s\nAverage Time per Iteration: %s s\nPseudotime Step: Re*Deltax^2/%s', string(tTot), string(tAvg), string(CFL));
+fprintf(fid, 'Total CPU-time: %s s\nAverage Time per Iteration: %s s\nPseudotime Step: %s', string(tTot), string(tAvg), string(Deltatau));
 fclose(fid);
 
 %% Functions
