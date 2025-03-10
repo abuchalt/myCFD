@@ -21,7 +21,7 @@ fprintf('Maximum number of points in y-direction')
 j_max = input('');
 
 % Input parameters
-Re = 50.0; % Reynold's number (kinematic viscosity)
+Re = 200.0; % Reynold's number (kinematic viscosity)
 u_lid = 1.0; % velocity at top boundry
 
 % Calculate step sizes
@@ -120,7 +120,7 @@ while (residual > epsilon)
             k_n = k + i_max;
             k_s = k - i_max;
 
-            % Define velocity (u,v) based on old Psi values
+            % Define velocity (u,v) based on current Psi values
             u(k,1) = (Psi(k_n,1)-Psi(k_s,1))/(2.0*Deltay);
             v(k,1) = -(Psi(k_e,1)-Psi(k_w,1))/(2.0*Deltax);
 
@@ -236,7 +236,7 @@ while (residual > epsilon)
     tTot = tTot + toc(tStart);
 
     % Plot solution
-    if mod(iter,10) == 0
+    if mod(iter,100) == 0
         uplot = reshape(u, i_max, j_max);
         vplot = reshape(v, i_max, j_max);
         figure(1);
