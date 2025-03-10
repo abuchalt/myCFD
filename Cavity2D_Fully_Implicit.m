@@ -21,7 +21,7 @@ fprintf('Maximum number of points in y-direction')
 j_max = input('');
 
 % Input parameters
-Re = 200.0; % Reynold's number (kinematic viscosity)
+Re = 100.0; % Reynold's number (kinematic viscosity)
 u_lid = 1.0; % velocity at top boundry
 
 % Calculate step sizes
@@ -30,7 +30,8 @@ Deltay = h/(j_max-1);
 
 % Define pseudo-timestep
 Deltatau = 100;
-% And define variables for pseudo-timestepping
+
+% Define parameters for Newton iteration
 residual = 1.0E5; % init residual
 epsilon = 1.0E-12; % drive residual down to this value before terminating
 
@@ -50,7 +51,7 @@ mkdir(fullfile(mydir,subfolder));
 %% Script
 % ------------------------------------------------------------------------------
 
-% Discretize and convert to a linear system A*T = b
+% Discretize and convert to a linear system A*Δx = b
 
 % Init
 A_PsiPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Streamfxn Coeff Matrix Sparsely
@@ -69,9 +70,6 @@ Psi = zeros(i_max*j_max,1);
 Omega = zeros(i_max*j_max,1);
 u = zeros(i_max*j_max,1);
 v = zeros(i_max*j_max,1);
-% "Old" Solution for finding residual
-Psi_old = zeros(i_max*j_max,1);
-Omega_old = zeros(i_max*j_max,1);
 
 % Define Coefficient Matrix
 for i = 2:i_max-1
@@ -83,8 +81,8 @@ for i = 2:i_max-1
         k_s = k - i_max;
 
         % pointer mapping goes row-by-row to assemble Coeff. Matrix
-        A_PsiPsi(k,k) = (1.0/Deltatau) + (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
-        % A_PsiPsi(k,k) = (2.0/Deltax^2)/Re + (2.0/Deltay^2)/Re;
+        % A_PsiPsi(k,k) = (1.0/Deltatau) + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+        A_PsiPsi(k,k) = (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
         A_PsiPsi(k,k_e) = (-1.0/Deltax^2)/Re;
         A_PsiPsi(k,k_w) = (-1.0/Deltax^2)/Re;
         A_PsiPsi(k,k_n) = (-1.0/Deltay^2)/Re;
@@ -125,8 +123,8 @@ while (residual > epsilon)
             v(k,1) = -(Psi(k_e,1)-Psi(k_w,1))/(2.0*Deltax);
 
             % Update vorticity coefficient matrix
-            A_OmegaOmega(k,k) = 1.0/Deltatau + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
-            % A_OmegaOmega(k,k) = (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+            % A_OmegaOmega(k,k) = (1.0/Deltatau) + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+            A_OmegaOmega(k,k) = (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
             A_OmegaOmega(k,k_e) = (-1.0/Deltax^2)/Re + u(k,1)/(2.0*Deltax);
             A_OmegaOmega(k,k_w) = (-1.0/Deltax^2)/Re - u(k,1)/(2.0*Deltax);
             A_OmegaOmega(k,k_n) = (-1.0/Deltay^2)/Re + v(k,1)/(2.0*Deltay);
@@ -137,10 +135,8 @@ while (residual > epsilon)
             A_OmegaPsi(k,k_n) = (Omega(k_e,1)-Omega(k_w,1))/(4.0*Deltay*Deltax);
             A_OmegaPsi(k,k_s) = -(Omega(k_e,1)-Omega(k_w,1))/(4.0*Deltay*Deltax);
 
-            b_Psi(k,1) = Psi(k,1)/Deltatau;
-            b_Omega(k,1) = Omega(k,1)/Deltatau;
-            % b_Psi(k,1) = 0;
-            % b_Omega(k,1) = 0;
+            b_Omega(k,1) = (-(Psi(k_n,1)-Psi(k_s,1))/(2.0*Deltay))*((Omega(k_e,1)-Omega(k_w,1))/(2.0*Deltax)) + ((Psi(k_e,1)-Psi(k_w,1))/(2.0*Deltax))*((Omega(k_n,1)-Omega(k_s,1))/(2.0*Deltay)) + ((Omega(k_e,1)-2*Omega(k,1)+Omega(k_w,1))/Deltax^2 + (Omega(k_n,1)-2*Omega(k,1)+Omega(k_s,1))/Deltay^2)/Re;
+            b_Psi(k,1) = (Omega(k,1) + (Psi(k_e,1)-2*Psi(k,1)+Psi(k_w,1))/Deltax^2 + (Psi(k_n,1)-2*Psi(k,1)+Psi(k_s,1))/Deltay^2)/Re;
         end
     end
 
@@ -152,13 +148,13 @@ while (residual > epsilon)
             k_e = k + 1;
             k_ee = k + 2;
             % Vorticity via second-order forward difference
-            A_OmegaOmega(k,k) = -1.0/Re;
-            A_OmegaPsi(k,k_e) = (-8.0/(2.0*(Deltay^2)))/Re;
-            A_OmegaPsi(k,k_ee) = (1.0/(2.0*(Deltay^2)))/Re;
-            b_Omega(k,1) = 0.0;
-            % No-slip (streamfxn = 0)
+            A_OmegaOmega(k,k) = -1.0;
+            A_OmegaPsi(k,k_e) = (-8.0/(2.0*(Deltax^2)));
+            A_OmegaPsi(k,k_ee) = (1.0/(2.0*(Deltax^2)));
+            b_Omega(k,1) = (Omega(k,1) + (8*Psi(k_e)-Psi(k_ee))/(2.0*Deltax));
+            % No-slip (streamfxn = constant 0)
             A_PsiPsi(k,k) = 1.0;
-            b_Psi(k,1) = 0.0;
+            b_Psi(k,1) = -Psi(k,1);
         end
     end
     % Right BC
@@ -168,13 +164,13 @@ while (residual > epsilon)
             k_w = k - 1;
             k_ww = k - 2;
             % Vorticity via second-order backward difference
-            A_OmegaOmega(k,k) = -1.0/Re;
-            A_OmegaPsi(k,k_w) = (-8.0/(2.0*(Deltay^2)))/Re;
-            A_OmegaPsi(k,k_ww) = (1.0/(2.0*(Deltay^2)))/Re;
-            b_Omega(k,1) = 0.0;
-            % No-slip (streamfxn = 0)
+            A_OmegaOmega(k,k) = -1.0;
+            A_OmegaPsi(k,k_w) = (-8.0/(2.0*(Deltax^2)));
+            A_OmegaPsi(k,k_ww) = (1.0/(2.0*(Deltax^2)));
+            b_Omega(k,1) = (Omega(k,1) + (8*Psi(k_w)-Psi(k_ww))/(2.0*Deltax));
+            % No-slip (streamfxn = constant 0)
             A_PsiPsi(k,k) = 1.0;
-            b_Psi(k,1) = 0.0;
+            b_Psi(k,1) = -Psi(k,1);
         end
     end
     % Bottom BC
@@ -184,13 +180,13 @@ while (residual > epsilon)
             k_n = k + i_max;
             k_nn = k + 2*i_max;
             % Vorticity via second-order forward difference
-            A_OmegaOmega(k,k) = -1.0/Re;
-            A_OmegaPsi(k,k_n) = (-8.0/(2.0*(Deltay^2)))/Re;
-            A_OmegaPsi(k,k_nn) = (1.0/(2.0*(Deltay^2)))/Re;
-            b_Omega(k,1) = 0.0;
-            % No-slip (streamfxn = 0)
+            A_OmegaOmega(k,k) = -1.0;
+            A_OmegaPsi(k,k_n) = (-8.0/(2.0*(Deltay^2)));
+            A_OmegaPsi(k,k_nn) = (1.0/(2.0*(Deltay^2)));
+            b_Omega(k,1) = (Omega(k,1) + (8*Psi(k_n)-Psi(k_nn))/(2.0*Deltay));
+            % No-slip (streamfxn = constant 0)
             A_PsiPsi(k,k) = 1.0;
-            b_Psi(k,1) = 0.0;
+            b_Psi(k,1) = -Psi(k,1);
         end
     end
     % Top BC
@@ -200,13 +196,13 @@ while (residual > epsilon)
             k_s = k - i_max;
             k_ss = k - 2*i_max;
             % Vorticity via second-order backward difference with lid-driven BC
-            A_OmegaOmega(k,k) = -1.0/Re;
-            A_OmegaPsi(k,k_s) = (-8.0/(2.0*(Deltay^2)))/Re;
-            A_OmegaPsi(k,k_ss) = (1.0/(2.0*(Deltay^2)))/Re;
-            b_Omega(k,1) = (3.0*u_lid/Deltay)/Re;
+            A_OmegaOmega(k,k) = -1.0;
+            A_OmegaPsi(k,k_s) = (-8.0/(2.0*(Deltay^2)));
+            A_OmegaPsi(k,k_ss) = (1.0/(2.0*(Deltay^2)));
+            b_Omega(k,1) = (Omega(k,1) + (3.0*u_lid/Deltay) + (8*Psi(k_s)-Psi(k_ss))/(2.0*Deltay));
             % Lid Velocity enforced (streamfxn = constant)
             A_PsiPsi(k,k) = 1.0;
-            b_Psi(k,1) = 0.0;
+            b_Psi(k,1) = -Psi(k,1);
         end
     end
     
@@ -217,21 +213,11 @@ while (residual > epsilon)
          b_Omega];
     M = sparse(M); % Enforce Sparse
     sol = M\b;
-    Psi = sol(1:i_max*j_max);
-    Omega = sol((i_max*j_max)+1:2*i_max*j_max);
+    Psi = Psi + sol(1:i_max*j_max);
+    Omega = Omega + sol((i_max*j_max)+1:2*i_max*j_max);
 
     % Compute the new residual
-    residual = 0.0;
-    for i = 1:i_max
-        for j = 1:j_max
-            k = pmap(i, j, i_max);
-            residual = residual + (Psi(k,1) - Psi_old(k,1))^2 + (Omega(k,1) - Omega_old(k,1))^2;
-        end
-    end
-    residual = sqrt(residual)/2.0; % Normalize for # of equations being solved
-    residual = residual/(i_max*j_max); % Normalize for DOF
-    Psi_old = Psi; % Update "old" values
-    Omega_old = Omega;
+    residual = norm(sol)/(2.0*i_max*j_max); % Normalized for # of equations being solved and DOF
 
     tTot = tTot + toc(tStart);
 
