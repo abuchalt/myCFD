@@ -1,75 +1,4 @@
-%% Cavity2D_Fully_Implicit
-% ------------------------------------------------------------------------------
-% This is a fully implicit solver for 2-dimensional Navier-Stokes equations, via
-% perturbation method applied to the vorticity transport equation, for a cavity
-% with tangential flow
-% ------------------------------------------------------------------------------
-clear all; close all; clc;
-
-%% Computational Parameters
-% ------------------------------------------------------------------------------
-
-% Define physical domain
-h = 1.0;
-w = 1.0;
-
-% Define mesh size
-fprintf('Maximum number of points in x-direction') % separate print and input
-                                                   % b/c vscode extension
-i_max = input('');
-fprintf('Maximum number of points in y-direction')
-j_max = input('');
-
-% Input parameters
-Re = 1000.0; % Reynold's number (kinematic viscosity)
-u_lid = 1.0; % velocity at top boundry
-
-% Calculate step sizes
-Deltax = w/(i_max-1);
-Deltay = h/(j_max-1);
-
-% Define pseudo-timestep
-Deltatau = 1;
-
-% Define parameters for Newton iteration
-residual = 1.0E5; % init residual
-epsilon = 1.0E-12; % drive residual down to this value before terminating
-
-% Define x and y values in spatial domain
-for i = 1:i_max
-    for j = 1:j_max
-        x(i,j) = Deltax*(i-1);
-        y(i,j) = Deltay*(j-1);
-    end
-end
-
-% File Info
-mydir='C:\\Users\\Bucky\\Downloads\\fullyCoupled_Results';
-subfolder='Re'+string(Re)+'_'+string(i_max)+'x'+string(j_max);
-mkdir(fullfile(mydir,subfolder));
-
-%% Script
-% ------------------------------------------------------------------------------
-
-% Discretize and convert to a linear system A*Δx = b
-
-% Init
-A_PsiPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Streamfxn Coeff Matrix Sparsely
-A_PsiOmega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Coeff Matrix for Streamfxn Dependence on Vorticity
-A_OmegaOmega = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Vorticity Coeff Matrix Sparsely
-A_OmegaPsi = spalloc(i_max*j_max, i_max*j_max, 5*i_max*j_max); % Allocate Coeff Matrix for Vorticity Dependence on Streamfxn
-% for i = 1:i_max*j_max
-%     A_PsiPsi(i,i) = 1.0;
-%     A_OmegaOmega(i,i) = 1.0;
-% end
-b_Psi = zeros(i_max*j_max,1); % init RHS
-b_Omega = zeros(i_max*j_max,1);
-
-% Define Solution Variables (1D because we use pointer mapping)
-Psi = zeros(i_max*j_max,1);
-Omega = zeros(i_max*j_max,1);
-u = zeros(i_max*j_max,1);
-v = zeros(i_max*j_max,1);
+residual = 1E5;
 
 % Define Coefficient Matrix
 for i = 2:i_max-1
@@ -304,8 +233,3 @@ fclose(fid);
 function k = pmap(i, j, i_max)
     k = i + (j-1)*i_max;
 end
-
-% function [i, j] = revPmap(k, i_max)
-%     i = 1 + mod((k-1), i_max);
-%     j = 1 + ((k-i)/i_max);
-% end
