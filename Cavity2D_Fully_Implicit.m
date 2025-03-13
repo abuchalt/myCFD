@@ -21,7 +21,7 @@ fprintf('Maximum number of points in y-direction')
 j_max = input('');
 
 % Input parameters
-Re = 1000.0; % Reynold's number (kinematic viscosity)
+Re = 3200.0; % Reynold's number (kinematic viscosity)
 u_lid = 1.0; % velocity at top boundry
 
 % Calculate step sizes
@@ -33,7 +33,7 @@ Deltatau = 1;
 
 % Define parameters for Newton iteration
 residual = 1.0E5; % init residual
-epsilon = 1.0E-12; % drive residual down to this value before terminating
+epsilon = 1.0E-16; % drive residual down to this value before terminating
 
 % Define x and y values in spatial domain
 for i = 1:i_max
@@ -82,7 +82,7 @@ for i = 2:i_max-1
 
         % pointer mapping goes row-by-row to assemble Coeff. Matrix
         A_PsiPsi(k,k) = (1.0/Deltatau) + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
-        % A_PsiPsi(k,k) = (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+        % A_PsiPsi(k,k) = (2.0/Deltax^2 + 2.0/Deltay^2)/Re; % Uncomment to drive Deltatau -> infty
         A_PsiPsi(k,k_e) = (-1.0/Deltax^2)/Re;
         A_PsiPsi(k,k_w) = (-1.0/Deltax^2)/Re;
         A_PsiPsi(k,k_n) = (-1.0/Deltay^2)/Re;
@@ -124,7 +124,7 @@ while (residual > epsilon)
 
             % Update vorticity coefficient matrix
             A_OmegaOmega(k,k) = (1.0/Deltatau) + (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
-            % A_OmegaOmega(k,k) = (2.0/Deltax^2 + 2.0/Deltay^2)/Re;
+            % A_OmegaOmega(k,k) = (2.0/Deltax^2 + 2.0/Deltay^2)/Re; % Uncomment to drive Deltatau -> infty
             A_OmegaOmega(k,k_e) = (-1.0/Deltax^2)/Re + u(k,1)/(2.0*Deltax);
             A_OmegaOmega(k,k_w) = (-1.0/Deltax^2)/Re - u(k,1)/(2.0*Deltax);
             A_OmegaOmega(k,k_n) = (-1.0/Deltay^2)/Re + v(k,1)/(2.0*Deltay);
@@ -136,7 +136,6 @@ while (residual > epsilon)
             A_OmegaPsi(k,k_s) = -(Omega(k_e,1)-Omega(k_w,1))/(4.0*Deltay*Deltax);
 
             b_Omega(k,1) = -((Psi(k_n,1)-Psi(k_s,1))/(2.0*Deltay))*((Omega(k_e,1)-Omega(k_w,1))/(2.0*Deltax)) + ((Psi(k_e,1)-Psi(k_w,1))/(2.0*Deltax))*((Omega(k_n,1)-Omega(k_s,1))/(2.0*Deltay)) + (((Omega(k_e,1)-2*Omega(k,1)+Omega(k_w,1))/(Deltax^2)) + ((Omega(k_n,1)-2*Omega(k,1)+Omega(k_s,1))/(Deltay^2)))/Re;
-            % b_Omega(k,1) = (-(Psi(k_n,1)*Omega(k_e,1)) + (Psi(k_n,1)*Omega(k_w,1)) + (Psi(k_s,1)*Omega(k_e,1)) - (Psi(k_s,1)*Omega(k_w,1)) + (Omega(k_n,1)*Psi(k_e,1)) - (Omega(k_n,1)*Psi(k_w,1)) - (Omega(k_s,1)*Psi(k_e,1)) + (Omega(k_s,1)*Psi(k_w,1)))/(4.0*Deltax*Deltay) + (((Omega(k_e,1)-2*Omega(k,1)+Omega(k_w,1))/(Deltax^2)) + ((Omega(k_n,1)-2*Omega(k,1)+Omega(k_s,1))/(Deltay^2)))/Re;
             b_Psi(k,1) = (Omega(k,1) + (Psi(k_e,1)-2*Psi(k,1)+Psi(k_w,1))/(Deltax^2) + (Psi(k_n,1)-2*Psi(k,1)+Psi(k_s,1))/(Deltay^2))/Re;
         end
     end

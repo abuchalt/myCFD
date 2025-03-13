@@ -9,7 +9,7 @@
 % ------------------------------------------------------------------------------
 
 % Re-init residual to restart iteration
-residual = 1E5;
+residual = 1.0E5;
 
 % Define Coefficient Matrix
 for i = 2:i_max-1
@@ -37,8 +37,6 @@ A_OmegaOmega = sparse(A_OmegaOmega);
 A_OmegaPsi = sparse(A_OmegaPsi);
 
 % Begin iteration
-tTot = 0;
-iter = 0;
 while (residual > epsilon)
 
     tStart = tic;
