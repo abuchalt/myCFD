@@ -1,3 +1,14 @@
+%% Cavity2D_Fully_Implicit_Restart
+% ------------------------------------------------------------------------------
+% This is a fully implicit solver for 2-dimensional Navier-Stokes equations, via
+% perturbation method applied to the vorticity transport equation, for a cavity
+% with tangential flow
+%
+% This script allows the iteration to be paused and continued from a new 
+% pseudotimestep in order to aid the approach to high Reynolds Number solutions
+% ------------------------------------------------------------------------------
+
+% Re-init residual to restart iteration
 residual = 1E5;
 
 % Define Coefficient Matrix
