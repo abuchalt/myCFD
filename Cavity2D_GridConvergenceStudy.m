@@ -13,7 +13,7 @@ Re = 100;
 meshSizes = [257, 129, 65];
 
 % File Info
-mydir='C:\\Users\\Bucky\\Downloads\\2DCavity_Results';
+mydir='C:\\Users\\Bucky\\Downloads\\fullyCoupled_Results';
 
 %% Import Data
 % ------------------------------------------------------------------------------
