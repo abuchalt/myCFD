@@ -21,7 +21,7 @@ outer_rad = 50.0;
 %
 % Flow conditions
 Re = 100.0;
-u_theta = 0.0;
+u_theta = 0.2;
 u_infty = 1.0;
 %
 % The scheme should be stable for any timestep but in many cases if the
@@ -382,7 +382,7 @@ while (residual > epsilon)
             A_OmegaPsi(kc(i,j),knn) = (beta(kc(i,j),1)/(2.0*deta^2))/Re;
             b_Omega(kc(i,j),1) = (Omega(kc(i,j),1) + ...
                                     beta(kc(i,j),1)*(-7.0*Psi(kc(i,j),1)+8.0*Psi(kn(i,j),1)-Psi(knn,1))/(2*deta^2) + ...
-                                    (Q(kc(i,j),1)-3.0*beta(kc(i,j),1)/deta)*(-u_theta)/(detadx(kc(i,j),1)*sin(theta)+detady(kc(i,j),1)*cos(theta)))/Re;
+                                    (Q(kc(i,j),1)-3.0*beta(kc(i,j),1)/deta)*(-u_theta)/(detadx(kc(i,j),1)*cos(theta)+detady(kc(i,j),1)*sin(theta)))/Re;
             % fprintf(1,'%g\n',detadx(kc(i,j),1))
             % fprintf(1,'%g\n',sin(theta))
             % fprintf(1,'%g\n',detady(kc(i,j),1))
