@@ -14,14 +14,14 @@ j_max = 181;
 n_max = i_max*j_max;
 %
 % Inner and outer radii for cylinder and far-field
-inner_rad = 0.50;
+inner_rad = 1.0;
 outer_rad = 50.0;
 %
 % Model 2D, Incompressible, Laminar, NS equations in Generalized Coordinates
 %
 % Flow conditions
-Re = 100.0;
-u_theta = 0.2;
+Re = 5.0;
+u_theta = -0.2;
 u_infty = 1.0;
 %
 % The scheme should be stable for any timestep but in many cases if the
@@ -37,7 +37,7 @@ epsilon = 1.0E-16; % drive residual down to this value before terminating
 %
 % File Info
 mydir='C:\\Users\\Bucky\\Downloads\\cylinderSS_Results';
-subfolder='Re'+string(Re)+'_'+string(i_max)+'x'+string(j_max);
+subfolder='Re'+string(Re)+'_alpha'+string(abs(u_theta))+'_ri'+string(inner_rad);
 mkdir(fullfile(mydir,subfolder));
 %
 %% Grid Metrics
@@ -417,46 +417,58 @@ while (residual > epsilon)
     % Complete CPU-time metric cycle
     tTot = tTot + toc(tStart);
     %
-    % Plot solution
-    if mod(iter,1) == 0
-        uplot = reshape(u, i_max, j_max);
-        vplot = reshape(v, i_max, j_max);
-        figure(1);
-        % Plot level curves for vorticity - arbitrary levels
-        contour(xg,yg,reshape(Omega, i_max, j_max),[-6.0 -5.0 -4.0 -3.0 -2.0 -1.0 -0.5 -0.2 -0.1 -0.05 0.05 0.1 0.2 0.5 1.0 2.0 3.0 4.0 5.0 6.0],'LineWidth',2.0);
-        axis([-2 16 -4 4]);
-        axis equal;
-        axis([-2 16 -4 4]);
-        ylabel('y');
-        xlabel('x');
-        title('Vorticity Contour');
-        figure(2);
-        % Plot level curve for streamfxn - levels informed by Ingham
-        contour(xg,yg,reshape(Psi, i_max, j_max),[-1.0 -0.5 -0.2 -0.1 -0.05 -0.02 -0.01 -0.005 -0.002 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5 1.0], 'LineWidth',2.0)
-        axis([-2 16 -4 4]);
-        axis equal;
-        axis([-2 16 -4 4]);
-        ylabel('y');
-        xlabel('x');
-        title('Streamline Pattern');
-        figure(3);
-        % Plot u-v vector field (velocity)
-        % quiver(xg,yg,uplot,vplot,20);
-        % ylabel('y');
-        % xlabel('x');
-        % title('Velocity Vector Field');
-        % axis([0 1 0 1]);
-        % figure(4);
-        % hold on;
-        % Plot log10(residual)
-        plot(iter,log10(residual),'bo');
-        grid on;
-        ylabel('log10(residual)');
-        xlabel('iteration');
-        title('Convergence Behavior');
-        hold off;
-        drawnow;
-    end
     fprintf(1,'iter = %i, residual = %g\n',iter,log10(residual));
     iter = iter+1;
 end
+%
+%% Output Results
+% ------------------------------------------------------------------------------
+%
+% Plot Results
+% uplot = reshape(u, i_max, j_max);
+% vplot = reshape(v, i_max, j_max);
+figure(1);
+% Plot level curves for vorticity - arbitrary levels
+contour(xg,yg,reshape(Omega, i_max, j_max),[-6.0 -5.0 -4.0 -3.0 -2.0 -1.0 -0.5 -0.2 -0.1 -0.05 0.05 0.1 0.2 0.5 1.0 2.0 3.0 4.0 5.0 6.0],'LineWidth',2.0);
+axis([-2 16 -4 4]);
+axis equal;
+axis([-2 16 -4 4]);
+ylabel('y');
+xlabel('x');
+title('Vorticity Contour');
+figure(2);
+% Plot level curve for streamfxn - levels informed by Ingham
+contour(xg,yg,reshape(Psi, i_max, j_max),[-1.0 -0.5 -0.2 -0.1 -0.05 -0.02 -0.01 -0.005 -0.002 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5 1.0], 'LineWidth',2.0)
+axis([-2 16 -4 4]);
+axis equal;
+axis([-2 16 -4 4]);
+ylabel('y');
+xlabel('x');
+title('Streamline Pattern');
+figure(3);
+% Plot surface vorticity against theta
+myTheta = atan2(y(kc(1:i_max,1),1), x(kc(1:i_max,1),1));
+myTheta(myTheta<0)=myTheta(myTheta<0)+(2*pi);
+myTheta=myTheta*180/pi;
+plot(myTheta,-Omega(kc(1:i_max,1),1))
+xlim([0,360])
+% plot(-Omega(kc(i_max:-1:1),1))
+ylabel('Vorticity');
+xlabel('Angle');
+title('The Variation of Surface Vorticity');
+drawnow;
+%
+% Save Final Plots
+saveas(figure(1),fullfile(mydir,subfolder,subfolder+'_vorticity.jpg'));
+saveas(figure(2),fullfile(mydir,subfolder,subfolder+'_streamfxn.jpg'));
+saveas(figure(3),fullfile(mydir,subfolder,subfolder+'_surfaceVorticity.jpg'));
+%
+% And Solution Matrices
+save(fullfile(mydir,subfolder,subfolder+'_Psi.mat'), 'Psi')
+save(fullfile(mydir,subfolder,subfolder+'_Omega.mat'), 'Omega')
+%
+% And Timing Info
+tAvg = tTot/iter;
+fid = fopen(fullfile(mydir,subfolder,'time.txt'),'wt');
+fprintf(fid, 'Total CPU-time: %s s\nAverage Time per Iteration: %s s\nPseudotime Step: %s', string(tTot), string(tAvg), string(dtau));
+fclose(fid);
