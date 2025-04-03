@@ -20,8 +20,8 @@ outer_rad = 50.0;
 % Model 2D, Incompressible, Laminar, NS equations in Generalized Coordinates
 %
 % Flow conditions
-Re = 5.0;
-u_theta = -0.2;
+Re = 20.0;
+u_theta = -0.5;
 u_infty = 1.0;
 %
 % The scheme should be stable for any timestep but in many cases if the
@@ -438,7 +438,7 @@ xlabel('x');
 title('Vorticity Contour');
 figure(2);
 % Plot level curve for streamfxn - levels informed by Ingham
-contour(xg,yg,reshape(Psi, i_max, j_max),[-1.0 -0.5 -0.2 -0.1 -0.05 -0.02 -0.01 -0.005 -0.002 0.002 0.005 0.01 0.02 0.05 0.1 0.2 0.5 1.0], 'LineWidth',2.0)
+contour(xg,yg,reshape(Psi, i_max, j_max),[-0.5 -0.3 -0.25 -0.2 -0.15 -0.1 -0.08 -0.05 -0.04 -0.02 -0.01 0.01 0.02 0.04 0.05 0.08 0.1 0.15 0.2 0.25 0.3 0.5], 'LineWidth',2.0)
 axis([-2 16 -4 4]);
 axis equal;
 axis([-2 16 -4 4]);
