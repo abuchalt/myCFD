@@ -14,14 +14,14 @@ j_max = 181;
 n_max = i_max*j_max;
 %
 % Inner and outer radii for cylinder and far-field
-inner_rad = 1.0;
+inner_rad = 0.5;
 outer_rad = 50.0;
 %
 % Model 2D, Incompressible, Laminar, NS equations in Generalized Coordinates
 %
 % Flow conditions
-Re = 20.0;
-u_theta = -0.5;
+Re = 100.0;
+u_theta = 0.0;
 u_infty = 1.0;
 %
 % The scheme should be stable for any timestep but in many cases if the
@@ -29,7 +29,7 @@ u_infty = 1.0;
 % this being similar to a Newton's method) the dtau value may need to be
 % limited. A finite dtau effectively corresponds to underrelaxation in
 % Newton's solution.
-dtau = inf;
+dtau = 50.0;
 %
 % Define parameters for Newton iteration
 residual = 1.0E5; % init residual
