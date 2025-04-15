@@ -113,7 +113,7 @@ end
 %
 % Define the cylinder mesh in physical domain.     %
 alen    = zeros(j_max,1);
-alen    = 0.0;
+% alen    = 0.0;
 alen(2) = 1.0;
 alen(3) = 2.0;
 alen(4) = 3.0;
@@ -121,7 +121,7 @@ for j = 5:j_max
     alen(j) = alen(j-1) + (j-3)^1;
 end
 alen2 = zeros(i_max,1);
-alen2 = 0.0;
+% alen2 = 0.0;
 for i = 2:i_max
     alen2(i) = alen2(i-1) + min(i-1,i_max-i+1)^0.6;
 end
@@ -317,7 +317,6 @@ for n = nstart:nend
     end
     residual = 1.0E5; % reinit residual
     epsilon = 1.0E-16; % redefine epsilon -- drive residual down to this value before terminating
-    iter = 0; % reinit iteration count
     %
     % Define Coefficient Matrix
     for i = 1:i_max
