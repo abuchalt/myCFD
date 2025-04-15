@@ -110,7 +110,7 @@ end
 %
 % Define the cylinder mesh in physical domain.     %
 alen    = zeros(j_max,1);
-alen    = 0.0;
+% alen    = 0.0;
 alen(2) = 1.0;
 alen(3) = 2.0;
 alen(4) = 3.0;
@@ -118,7 +118,7 @@ for j = 5:j_max
     alen(j) = alen(j-1) + (j-3)^1;
 end
 alen2 = zeros(i_max,1);
-alen2 = 0.0;
+% alen2 = 0.0;
 for i = 2:i_max
     alen2(i) = alen2(i-1) + min(i-1,i_max-i+1)^0.6;
 end
