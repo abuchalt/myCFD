@@ -20,7 +20,7 @@ outer_rad = 50.0;
 % Model 2D, Incompressible, Laminar, NS equations in Generalized Coordinates
 %
 % Flow conditions
-Re = 40.0;
+Re = 100.0;
 u_theta = 0.0;
 u_infty = 1.0;
 %
@@ -31,7 +31,8 @@ u_infty = 1.0;
 % Newton's solution.
 dtau = 1000.0;
 % And double-timestepping
-dt = 1.0;
+dt = 0.05;
+% dt = 1.0;
 nstart = 1;
 %
 % % Define parameters for Newton iteration
@@ -40,7 +41,7 @@ nstart = 1;
 %
 % File Info
 mydir='C:\\Users\\Bucky\\Downloads\\cylinderSS_Results_Unsteady';
-subfolder='Re'+string(Re)+'_alpha'+string(abs(u_theta))+'_ri'+string(inner_rad);
+subfolder='Re'+string(Re)+'_unsteady_long';
 mkdir(fullfile(mydir,subfolder));
 %
 %% Grid Metrics
@@ -297,7 +298,7 @@ v = zeros(i_max*j_max,1);
 %
 % Start Solver
 % tic
-nend = 10001;
+nend = 2501;
 for n = nstart:nend
     if n == 1
         time(n) = 0.0;
@@ -311,7 +312,7 @@ for n = nstart:nend
         dtau = inf;
     end
     if n >= 2 && n <= 3
-        u_theta = 1.5;
+        u_theta = 10.0;
     else
         u_theta = 0.0;
     end
@@ -488,9 +489,9 @@ for n = nstart:nend
     % Shedding Frequency
     plot(time,myStateVar)
     % xlim([0,dt*nend])
-    ylim([0.0,0.01])
+    % ylim([-0.3,0.3])
     ylabel('Vorticity Value in Arbitrary Wake Position');
-    xlabel('Time (s)');
+    xlabel('Time (unitless)');
     title('Vortex Shedding Pattern in Wake');
     drawnow;
 end
@@ -503,3 +504,5 @@ exportgraphics(myAxes,fullfile(mydir,subfolder,subfolder+'_sheddingPattern.jpg')
 save(fullfile(mydir,subfolder,subfolder+'_Psi.mat'), 'Psi')
 save(fullfile(mydir,subfolder,subfolder+'_Omega.mat'), 'Omega')
 %
+save(fullfile(mydir,subfolder,subfolder+'_myStateVar.mat'), 'myStateVar')
+save(fullfile(mydir,subfolder,subfolder+'_time.mat'), 'time')
