@@ -32,7 +32,8 @@
 %
 % Define variables
 clear all; clc;
-N = input('Total number of cells = ? ');
+fprintf('Total number of cells = ')
+N = input('');
 x_f = zeros(1,N+1);
 x_c = zeros(1,N+1);
 Q   = zeros(2,N+2);
@@ -47,19 +48,29 @@ x_c(1,N+2)   = 1.0;
 %cfl  = sqrt(8.0);
 n_rk = 3;
 alfa = [1/2 1/2 1];
-cfl  = 2.0;
+cfl  = 1.95;
 % n_rk = 2;
 % alfa = [1/2 1];
 % cfl  = 1.0;
+epsilon = -15;
+
+% File Info
+mydir='C:\\Users\\Bucky\\Downloads\\FV1_Results';
+subfolder='Ncell'+string(N)+'_CFL'+string(cfl);
+mkdir(fullfile(mydir,subfolder));
 
 dt   = 0.95*dx*cfl;
 %
 % Iterate until convergence
+tTot = 0;
 niter = 1;
 Residual(niter) = 0;
-while Residual(niter) > -2
+iteration(niter) = 1;
+while Residual(niter) > epsilon
+    tStart = tic;
     niter = niter + 1;
-% for niter = 1:10
+    iteration(niter) = niter;
+% for niter = 1:300
     %
     % RK integration
     Q0 = Q;
@@ -90,7 +101,10 @@ while Residual(niter) > -2
         end
         % End points
         S(1,1) = 0.0;
-        S(2,1) = 1.0;
+        S(2,1) = 0.0;
+
+        S(1,N+2) = 0.0;
+        S(2,N+2) = 1.0;
         %
         % Compute Residuals
         R = 0.0;
@@ -101,12 +115,16 @@ while Residual(niter) > -2
         %
         % Take care of the Residuals at the ends for Q1 and Q_N+2
         F_Q2_1 = Q(2,2);
-        F_Q1_1 = F(1,1);
-        F_QN2_1 = F(1,N+1);
+        % F_Q1_1 = F(1,1);
+        F_Q1_1 = Q(2,1);
+        % F_QN2_1 = F(1,N+1);
+        F_QN2_1 = Q(2,N+2);
         F_QN1_1 = Q(2,N+1);
         F_Q2_2 = Q(1,2);
-        F_Q1_2 = F(2,1);
-        F_QN2_2 = F(2,N+1);
+        % F_Q1_2 = F(2,1);
+        F_Q1_2 = Q(1,1);
+        % F_QN2_2 = F(2,N+1);
+        F_QN2_2 = Q(1,N+2);
         F_QN1_2 = Q(1,N+1);
         R(1,1) = S(1,1) - (F_Q2_1-F_Q1_1)/(dx/2);
         R(1,N+2) = S(1,N+2) - (F_QN2_1-F_QN1_1)/(dx/2);
@@ -130,10 +148,29 @@ while Residual(niter) > -2
         Q(1,N+2) = 0.5*(Q(1,N+2) + Q(2,N+2));
         Q(2,N+2) = Q(1,N+2);
     end
-%
+    tTot = tTot + toc(tStart);
+    %
     Residual(niter) = log10(norm(R)/(2*(N+2)));           
     figure(1);
     plot(x_c,Q);
     axis([0 1 0 0.6]);
+    ylabel('u');
+    xlabel('x');
+    title('Model Solution for 1-D Traveling Wave');
     fprintf(1,'Iteration Number = %g Residual = %g\n',niter,Residual(niter));
 end
+
+figure(2);
+plot(iteration, Residual, 'bo');
+grid on;
+ylabel('log10(residual)');
+xlabel('iteration');
+title('Convergence Behavior');
+
+saveas(figure(1),fullfile(mydir,subfolder,subfolder+'_soln.jpg'));
+saveas(figure(2),fullfile(mydir,subfolder,subfolder+'_conv.jpg'));
+
+% And Iteration Info
+fid = fopen(fullfile(mydir,subfolder,'iter.txt'),'wt');
+fprintf(fid, 'Total Iterations: %s \nTotal CPU-time: %s s', string(niter), string(tTot));
+fclose(fid);
